@@ -251,3 +251,181 @@ st.text_area(
     height=100,
     key="graph3_note"
 )
+
+# --------------------------------------------------
+# 그래프 4
+# --------------------------------------------------
+st.divider()
+st.header("📊 그래프 4. 영화별 일관객 TOP 10")
+
+st.write(
+    "이 기간 동안 각 영화의 일관객을 모두 합산해 "
+    "관객 수가 많은 영화 TOP 10을 비교합니다."
+)
+
+# 영화별 일관객 합계
+movie_summary = (
+    df.groupby("영화명")
+    .agg(
+        총_일관객=("일관객", "sum"),
+        10위권_등장일수=("날짜", "nunique")
+    )
+    .reset_index()
+)
+
+# 일관객이 많은 TOP 10
+top10_movies = (
+    movie_summary
+    .sort_values("총_일관객", ascending=False)
+    .head(10)
+    .sort_values("총_일관객", ascending=True)
+)
+
+# 가로 막대그래프
+fig4 = px.bar(
+    top10_movies,
+    x="총_일관객",
+    y="영화명",
+    orientation="h",
+    title="영화별 일관객 TOP 10",
+    labels={
+        "총_일관객": "이 기간 일관객 합계",
+        "영화명": "영화"
+    },
+    text="총_일관객"
+)
+
+# 막대 위 숫자 표시
+fig4.update_traces(
+    texttemplate="%{text:,}명",
+    textposition="outside",
+
+    # 마우스를 올렸을 때 표시할 정보
+    customdata=top10_movies[["10위권_등장일수"]].values,
+    hovertemplate=
+        "영화: %{y}<br>"
+        "이 기간 일관객 합계: %{x:,}명<br>"
+        "개봉 후 10위권에 든 날수: %{customdata[0]}일"
+        "<extra></extra>"
+)
+
+# 관객이 많은 영화가 위에 오도록 설정
+fig4.update_layout(
+    height=600,
+    yaxis={
+        "categoryorder": "total ascending"
+    }
+)
+
+st.plotly_chart(
+    fig4,
+    use_container_width=True
+)
+
+# 사용자가 직접 작성할 자리
+st.markdown("### 💡 이 그래프로 알 수 있는 것")
+st.text_area(
+    "내용을 직접 작성하세요.",
+    placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
+    height=100,
+    key="graph4_note"
+)
+
+# --------------------------------------------------
+# 그래프 5
+# --------------------------------------------------
+st.divider()
+st.header("📊 그래프 5. 월 × 요일별 일관객 합계")
+
+st.write(
+    "월과 요일별로 10위권 영화의 일관객을 합산해 "
+    "어떤 월·요일에 관객이 많았는지 한눈에 비교합니다."
+)
+
+# 날짜에서 월과 요일 추출
+heatmap_df = df.copy()
+
+heatmap_df["월"] = heatmap_df["날짜"].dt.month
+
+# 요일 번호: 월요일=0 ~ 일요일=6
+weekday_order = [
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일",
+    "일요일"
+]
+
+heatmap_df["요일"] = heatmap_df["날짜"].dt.dayofweek.map(
+    dict(enumerate(weekday_order))
+)
+
+# 월 × 요일별 일관객 합계
+heatmap_data = (
+    heatmap_df
+    .groupby(["월", "요일"])["일관객"]
+    .sum()
+    .reset_index()
+)
+
+# 피벗 테이블
+heatmap_pivot = heatmap_data.pivot(
+    index="월",
+    columns="요일",
+    values="일관객"
+)
+
+# 요일 순서 고정
+heatmap_pivot = heatmap_pivot.reindex(
+    columns=weekday_order
+)
+
+# 월 순서 고정
+heatmap_pivot = heatmap_pivot.reindex(
+    range(1, 13)
+)
+
+# Plotly 히트맵
+fig5 = px.imshow(
+    heatmap_pivot,
+    labels={
+        "x": "요일",
+        "y": "월",
+        "color": "일관객 합계"
+    },
+    x=weekday_order,
+    y=[f"{month}월" for month in range(1, 13)],
+    text_auto=",",
+    aspect="auto",
+    title="월 × 요일별 10위권 일관객 합계"
+)
+
+# 마우스를 올렸을 때 표시
+fig5.update_traces(
+    hovertemplate=
+        "%{y} %{x}<br>"
+        "일관객 합계: %{z:,}명"
+        "<extra></extra>"
+)
+
+fig5.update_layout(
+    height=650,
+    xaxis_title="요일",
+    yaxis_title="월"
+)
+
+st.plotly_chart(
+    fig5,
+    use_container_width=True
+)
+
+# 사용자가 직접 작성할 자리
+st.markdown("### 💡 이 그래프로 알 수 있는 것")
+st.text_area(
+    "내용을 직접 작성하세요.",
+    placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
+    height=100,
+    key="graph5_note"
+)
