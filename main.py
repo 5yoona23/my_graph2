@@ -12,62 +12,72 @@ st.set_page_config(
 )
 
 st.title("🎬 영화 데이터 그래프 도감 1 - 시간")
-st.write("영화의 일별 관객 변화를 시간의 흐름에 따라 살펴봅니다.")
+st.write("영화 데이터를 시간의 흐름에 따라 다양한 그래프로 살펴봅니다.")
 
 # --------------------------------------------------
 # 데이터 불러오기
 # --------------------------------------------------
 DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_daily.csv"
 
+
 @st.cache_data
 def load_data():
     df = pd.read_csv(DATA_URL)
 
-    # 날짜 열을 진짜 날짜 형식으로 변환
+    # 날짜를 진짜 날짜 형식으로 변환
     df["날짜"] = pd.to_datetime(
         df["날짜"].astype(str),
         format="%Y%m%d"
     )
 
-    # 숫자형 열 변환
-    numeric_columns = ["순위", "일관객", "누적관객", "스크린수", "상영횟수"]
+    # 숫자형 데이터 변환
+    numeric_columns = [
+        "순위",
+        "일관객",
+        "누적관객",
+        "스크린수",
+        "상영횟수"
+    ]
 
     for col in numeric_columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        df[col] = pd.to_numeric(
+            df[col],
+            errors="coerce"
+        )
 
     return df
 
 
 df = load_data()
 
-# --------------------------------------------------
+
+# ==================================================
 # 그래프 1
-# --------------------------------------------------
+# ==================================================
 st.divider()
 st.header("📈 그래프 1. 영화별 일관객 변화")
 
-st.write("영화를 하나 선택하면 해당 영화의 날짜별 일관객 변화를 볼 수 있습니다.")
+st.write(
+    "영화를 하나 선택하면 해당 영화의 날짜별 일관객 변화를 볼 수 있습니다."
+)
 
-# 영화 목록
-movie_list = sorted(df["영화명"].dropna().unique())
+movie_list = sorted(
+    df["영화명"].dropna().unique()
+)
 
 selected_movie = st.selectbox(
     "🎬 영화를 선택하세요",
     movie_list
 )
 
-# 선택한 영화만 추출
-movie_df = df[df["영화명"] == selected_movie].copy()
+movie_df = df[
+    df["영화명"] == selected_movie
+].copy()
 
-# 날짜순 정렬
 movie_df = movie_df.sort_values("날짜")
 
-# 그래프용 데이터
-chart_df = movie_df[["날짜", "일관객"]].copy()
-
-# Plotly 선 그래프
-fig = px.line(
-    chart_df,
+fig1 = px.line(
+    movie_df,
     x="날짜",
     y="일관객",
     markers=True,
@@ -78,36 +88,36 @@ fig = px.line(
     }
 )
 
-# 마우스를 올렸을 때 날짜 + 관객수 표시
-fig.update_traces(
+fig1.update_traces(
     hovertemplate=
         "날짜: %{x|%Y-%m-%d}<br>"
         "일관객: %{y:,}명"
         "<extra></extra>"
 )
 
-fig.update_layout(
+fig1.update_layout(
     hovermode="x unified",
     height=500
 )
 
 st.plotly_chart(
-    fig,
+    fig1,
     use_container_width=True
 )
 
-# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성하세요.",
-    placeholder="예: 이 영화는 개봉 초기에 관객이 가장 많고 이후 점차 감소하는 모습을 보인다.",
+    placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
     height=100,
     key="graph1_note"
 )
 
-# --------------------------------------------------
+
+# ==================================================
 # 그래프 2
-# --------------------------------------------------
+# ==================================================
 st.divider()
 st.header("📊 그래프 2. 일관객 합계 TOP 5 영화의 날짜별 변화")
 
@@ -115,7 +125,7 @@ st.write(
     "이 기간 동안 일관객 합계가 가장 큰 5편의 날짜별 일관객 변화를 비교합니다."
 )
 
-# 영화별 일관객 합계 계산
+# 영화별 일관객 합계 TOP 5
 top5_movies = (
     df.groupby("영화명")["일관객"]
     .sum()
@@ -124,13 +134,14 @@ top5_movies = (
     .index
 )
 
-# 상위 5편 데이터만 추출
-top5_df = df[df["영화명"].isin(top5_movies)].copy()
+top5_df = df[
+    df["영화명"].isin(top5_movies)
+].copy()
 
-# 날짜순 정렬
-top5_df = top5_df.sort_values(["날짜", "영화명"])
+top5_df = top5_df.sort_values(
+    ["날짜", "영화명"]
+)
 
-# Plotly 선 그래프
 fig2 = px.line(
     top5_df,
     x="날짜",
@@ -145,7 +156,6 @@ fig2 = px.line(
     }
 )
 
-# 마우스를 올렸을 때 날짜와 관객수 표시
 fig2.update_traces(
     hovertemplate=
         "날짜: %{x|%Y-%m-%d}<br>"
@@ -164,8 +174,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성하세요.",
     placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
@@ -173,9 +183,10 @@ st.text_area(
     key="graph2_note"
 )
 
-# --------------------------------------------------
+
+# ==================================================
 # 그래프 3
-# --------------------------------------------------
+# ==================================================
 st.divider()
 st.header("📊 그래프 3. 날짜별 10위권 일관객 합계")
 
@@ -184,21 +195,20 @@ st.write(
     "하루 동안의 전체 관객 규모를 살펴봅니다."
 )
 
-# 날짜별 10위권 일관객 합계 계산
+# 날짜별 일관객 합계
 daily_audience = (
     df.groupby("날짜", as_index=False)["일관객"]
     .sum()
     .sort_values("날짜")
 )
 
-# 일관객 합계가 가장 큰 날 3개 찾기
+# 일관객 합계가 가장 큰 날 3개
 top3_days = (
     daily_audience
     .nlargest(3, "일관객")
     .sort_values("날짜")
 )
 
-# 영역 그래프
 fig3 = px.area(
     daily_audience,
     x="날짜",
@@ -210,7 +220,6 @@ fig3 = px.area(
     }
 )
 
-# 마우스를 올렸을 때 날짜와 합계 표시
 fig3.update_traces(
     hovertemplate=
         "날짜: %{x|%Y-%m-%d}<br>"
@@ -218,7 +227,7 @@ fig3.update_traces(
         "<extra></extra>"
 )
 
-# 가장 큰 3일을 그래프 위에 표시
+# TOP 3 날짜 표시
 for _, row in top3_days.iterrows():
     fig3.add_annotation(
         x=row["날짜"],
@@ -243,8 +252,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성하세요.",
     placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
@@ -252,9 +261,10 @@ st.text_area(
     key="graph3_note"
 )
 
-# --------------------------------------------------
+
+# ==================================================
 # 그래프 4
-# --------------------------------------------------
+# ==================================================
 st.divider()
 st.header("📊 그래프 4. 영화별 일관객 TOP 10")
 
@@ -263,25 +273,32 @@ st.write(
     "관객 수가 많은 영화 TOP 10을 비교합니다."
 )
 
-# 영화별 일관객 합계
+# --------------------------------------------------
+# 영화별 총 일관객 + 10위권 등장 일수
+# --------------------------------------------------
 movie_summary = (
     df.groupby("영화명")
     .agg(
         총_일관객=("일관객", "sum"),
-        10위권_등장일수=("날짜", "nunique")
+        등장일수=("날짜", "nunique")
     )
     .reset_index()
 )
 
-# 일관객이 많은 TOP 10
+# 총 일관객 TOP 10
 top10_movies = (
     movie_summary
-    .sort_values("총_일관객", ascending=False)
+    .sort_values(
+        "총_일관객",
+        ascending=False
+    )
     .head(10)
-    .sort_values("총_일관객", ascending=True)
+    .sort_values(
+        "총_일관객",
+        ascending=True
+    )
 )
 
-# 가로 막대그래프
 fig4 = px.bar(
     top10_movies,
     x="총_일관객",
@@ -295,26 +312,21 @@ fig4 = px.bar(
     text="총_일관객"
 )
 
-# 막대 위 숫자 표시
 fig4.update_traces(
     texttemplate="%{text:,}명",
     textposition="outside",
-
-    # 마우스를 올렸을 때 표시할 정보
-    customdata=top10_movies[["10위권_등장일수"]].values,
+    customdata=top10_movies[
+        ["등장일수"]
+    ].values,
     hovertemplate=
         "영화: %{y}<br>"
         "이 기간 일관객 합계: %{x:,}명<br>"
-        "개봉 후 10위권에 든 날수: %{customdata[0]}일"
+        "10위권에 든 날수: %{customdata[0]}일"
         "<extra></extra>"
 )
 
-# 관객이 많은 영화가 위에 오도록 설정
 fig4.update_layout(
-    height=600,
-    yaxis={
-        "categoryorder": "total ascending"
-    }
+    height=600
 )
 
 st.plotly_chart(
@@ -322,8 +334,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성하세요.",
     placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
@@ -331,9 +343,10 @@ st.text_area(
     key="graph4_note"
 )
 
-# --------------------------------------------------
+
+# ==================================================
 # 그래프 5
-# --------------------------------------------------
+# ==================================================
 st.divider()
 st.header("📊 그래프 5. 월 × 요일별 일관객 합계")
 
@@ -347,7 +360,6 @@ heatmap_df = df.copy()
 
 heatmap_df["월"] = heatmap_df["날짜"].dt.month
 
-# 요일 번호: 월요일=0 ~ 일요일=6
 weekday_order = [
     "월요일",
     "화요일",
@@ -358,8 +370,10 @@ weekday_order = [
     "일요일"
 ]
 
-heatmap_df["요일"] = heatmap_df["날짜"].dt.dayofweek.map(
-    dict(enumerate(weekday_order))
+heatmap_df["요일"] = (
+    heatmap_df["날짜"]
+    .dt.dayofweek
+    .map(dict(enumerate(weekday_order)))
 )
 
 # 월 × 요일별 일관객 합계
@@ -370,24 +384,23 @@ heatmap_data = (
     .reset_index()
 )
 
-# 피벗 테이블
+# 피벗
 heatmap_pivot = heatmap_data.pivot(
     index="월",
     columns="요일",
     values="일관객"
 )
 
-# 요일 순서 고정
+# 월요일 → 일요일 순서
 heatmap_pivot = heatmap_pivot.reindex(
     columns=weekday_order
 )
 
-# 월 순서 고정
+# 1월 → 12월 순서
 heatmap_pivot = heatmap_pivot.reindex(
     range(1, 13)
 )
 
-# Plotly 히트맵
 fig5 = px.imshow(
     heatmap_pivot,
     labels={
@@ -402,7 +415,6 @@ fig5 = px.imshow(
     title="월 × 요일별 10위권 일관객 합계"
 )
 
-# 마우스를 올렸을 때 표시
 fig5.update_traces(
     hovertemplate=
         "%{y} %{x}<br>"
@@ -421,8 +433,8 @@ st.plotly_chart(
     use_container_width=True
 )
 
-# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
+
 st.text_area(
     "내용을 직접 작성하세요.",
     placeholder="이 그래프에서 알 수 있는 내용을 작성하세요.",
