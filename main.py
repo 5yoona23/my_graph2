@@ -175,13 +175,75 @@ st.text_area(
 
 # --------------------------------------------------
 # 그래프 3
-# 앞으로 추가할 그래프 영역
 # --------------------------------------------------
 st.divider()
-st.header("📊 그래프 3")
+st.header("📊 그래프 3. 날짜별 10위권 일관객 합계")
 
-st.info("여기에 다음 그래프를 추가하면 됩니다.")
+st.write(
+    "각 날짜의 박스오피스 10위권 영화들의 일관객을 모두 더해 "
+    "하루 동안의 전체 관객 규모를 살펴봅니다."
+)
 
+# 날짜별 10위권 일관객 합계 계산
+daily_audience = (
+    df.groupby("날짜", as_index=False)["일관객"]
+    .sum()
+    .sort_values("날짜")
+)
+
+# 일관객 합계가 가장 큰 날 3개 찾기
+top3_days = (
+    daily_audience
+    .nlargest(3, "일관객")
+    .sort_values("날짜")
+)
+
+# 영역 그래프
+fig3 = px.area(
+    daily_audience,
+    x="날짜",
+    y="일관객",
+    title="날짜별 10위권 일관객 합계",
+    labels={
+        "날짜": "날짜",
+        "일관객": "10위권 일관객 합계"
+    }
+)
+
+# 마우스를 올렸을 때 날짜와 합계 표시
+fig3.update_traces(
+    hovertemplate=
+        "날짜: %{x|%Y-%m-%d}<br>"
+        "10위권 일관객 합계: %{y:,}명"
+        "<extra></extra>"
+)
+
+# 가장 큰 3일을 그래프 위에 표시
+for _, row in top3_days.iterrows():
+    fig3.add_annotation(
+        x=row["날짜"],
+        y=row["일관객"],
+        text=(
+            f"<b>{row['날짜'].strftime('%Y-%m-%d')}</b><br>"
+            f"{row['일관객']:,}명"
+        ),
+        showarrow=True,
+        arrowhead=2,
+        ax=0,
+        ay=-50
+    )
+
+fig3.update_layout(
+    hovermode="x unified",
+    height=550
+)
+
+st.plotly_chart(
+    fig3,
+    use_container_width=True
+)
+
+# 사용자가 직접 작성할 자리
 st.markdown("### 💡 이 그래프로 알 수 있는 것")
 st.text_area(
     "내용을 직접 작성하세요.",
